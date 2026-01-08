@@ -45,7 +45,7 @@
         background-color: #475569;
       }
     </style>
-  <script type="importmap">
+<script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@^19.2.3",
@@ -66,6 +66,7 @@
     <!-- Application Code -->
     <script type="text/babel" data-type="module" data-presets="react, typescript">
       // 1. IMPORTS
+      // Note: We use specific versions and dependency pointers (?deps=react@18.2.0) to ensure a single React instance.
       import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'https://esm.sh/react@18.2.0';
       import ReactDOM from 'https://esm.sh/react-dom@18.2.0/client';
       import { HashRouter, Routes, Route, Navigate, NavLink, useNavigate, useParams, useLocation } from 'https://esm.sh/react-router-dom@6.22.0?deps=react@18.2.0,react-dom@18.2.0';
