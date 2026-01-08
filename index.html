@@ -4,7 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>OPE SERMAS - Auxiliar Administrativo</title>
-    <!-- Tailwind CSS -->
+    
+    <!-- 1. Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -26,26 +27,21 @@
       }
     </script>
     
-    <!-- Babel Standalone for in-browser compilation -->
+    <!-- 2. Babel Standalone (Compila React/TS en el navegador) -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
-      /* Custom scrollbar for better aesthetics */
-      ::-webkit-scrollbar {
-        width: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      ::-webkit-scrollbar-thumb {
-        background-color: #cbd5e1;
-        border-radius: 20px;
-      }
-      .dark ::-webkit-scrollbar-thumb {
-        background-color: #475569;
-      }
+      ::-webkit-scrollbar { width: 8px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+      .dark ::-webkit-scrollbar-thumb { background-color: #475569; }
+      /* Animación para tarjeta */
+      .perspective-1000 { perspective: 1000px; }
+      .preserve-3d { transform-style: preserve-3d; }
+      .backface-hidden { backface-visibility: hidden; }
+      .rotate-y-180 { transform: rotateY(180deg); }
     </style>
-<script type="importmap">
+  <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@^19.2.3",
@@ -63,10 +59,11 @@
   <body class="bg-gray-50 text-gray-900 dark:bg-slate-900 dark:text-gray-100 transition-colors duration-200">
     <div id="root"></div>
 
-    <!-- Application Code -->
-    <script type="text/babel" data-type="module" data-presets="react, typescript">
-      // 1. IMPORTS
-      // Note: We use specific versions and dependency pointers (?deps=react@18.2.0) to ensure a single React instance.
+    <!-- 3. CÓDIGO DE LA APLICACIÓN -->
+    <script type="text/babel" data-presets="react, typescript">
+      // ----------------------------------------------------------------------
+      // A. IMPORTACIONES (Desde CDN esm.sh para compatibilidad total)
+      // ----------------------------------------------------------------------
       import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'https://esm.sh/react@18.2.0';
       import ReactDOM from 'https://esm.sh/react-dom@18.2.0/client';
       import { HashRouter, Routes, Route, Navigate, NavLink, useNavigate, useParams, useLocation } from 'https://esm.sh/react-router-dom@6.22.0?deps=react@18.2.0,react-dom@18.2.0';
@@ -80,7 +77,9 @@
       import ReactMarkdown from 'https://esm.sh/react-markdown@9.0.1?deps=react@18.2.0';
       import jsPDF from 'https://esm.sh/jspdf@2.5.1';
 
-      // 2. TYPES
+      // ----------------------------------------------------------------------
+      // B. TIPOS Y ENUMS
+      // ----------------------------------------------------------------------
       enum TopicStatus {
         Pending = 'Pending',
         InReview = 'InReview',
@@ -94,34 +93,10 @@
         Other = 'Otros',
       }
 
-      interface Subtopic {
-        id: string;
-        title: string;
-        content: string;
-      }
-
-      interface Topic {
-        id: number;
-        title: string;
-        category: TopicCategory;
-        subtopics: Subtopic[];
-      }
-
-      interface UserProgress {
-        topicId: number;
-        status: TopicStatus;
-        lastStudied?: string;
-        timesReviewed: number;
-      }
-
-      interface AppState {
-        progress: Record<number, UserProgress>;
-        darkMode: boolean;
-        textSize: number;
-      }
-
-      // 3. DATA
-      const TOPICS: Topic[] = [
+      // ----------------------------------------------------------------------
+      // C. DATOS (Temario)
+      // ----------------------------------------------------------------------
+      const TOPICS = [
         {
           id: 1,
           title: "La Constitución española de 1978",
@@ -230,7 +205,7 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
         { id: 31, title: "La Administración Electrónica en la CM", category: TopicCategory.SERMAS, subtopics: [] },
       ];
 
-      const getTopicContent = (topicId: number): Topic => {
+      const getTopicContent = (topicId) => {
         const topic = TOPICS.find(t => t.id === topicId);
         if (!topic) throw new Error("Topic not found");
 
@@ -247,26 +222,23 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
         return topic;
       };
 
-      // 4. CONTEXT
-      interface StudyContextType extends AppState {
-        toggleDarkMode: () => void;
-        updateTopicStatus: (topicId: number, status: TopicStatus) => void;
-        setTextSize: (size: number) => void;
-        getTopicProgress: (topicId: number) => UserProgress;
-      }
-
-      const defaultState: AppState = {
+      // ----------------------------------------------------------------------
+      // D. CONTEXTO Y ESTADO GLOBAL
+      // ----------------------------------------------------------------------
+      const defaultState = {
         progress: {},
         darkMode: false,
         textSize: 100,
       };
 
-      const StudyContext = createContext<StudyContextType | undefined>(undefined);
+      const StudyContext = createContext(undefined);
 
-      const StudyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-        const [state, setState] = useState<AppState>(() => {
-          const saved = localStorage.getItem('sermas_app_state');
-          return saved ? JSON.parse(saved) : defaultState;
+      const StudyProvider = ({ children }) => {
+        const [state, setState] = useState(() => {
+          try {
+             const saved = localStorage.getItem('sermas_app_state');
+             return saved ? JSON.parse(saved) : defaultState;
+          } catch(e) { return defaultState; }
         });
 
         useEffect(() => {
@@ -282,11 +254,11 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
           setState(prev => ({ ...prev, darkMode: !prev.darkMode }));
         };
 
-        const setTextSize = (size: number) => {
+        const setTextSize = (size) => {
           setState(prev => ({ ...prev, textSize: size }));
         };
 
-        const updateTopicStatus = (topicId: number, status: TopicStatus) => {
+        const updateTopicStatus = (topicId, status) => {
           setState(prev => {
             const currentProgress = prev.progress[topicId] || { topicId, timesReviewed: 0 };
             return {
@@ -304,7 +276,7 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
           });
         };
 
-        const getTopicProgress = (topicId: number): UserProgress => {
+        const getTopicProgress = (topicId) => {
           return state.progress[topicId] || { topicId, status: TopicStatus.Pending, timesReviewed: 0 };
         };
 
@@ -327,8 +299,12 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
         return context;
       };
 
-      // 5. COMPONENTS
-      const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+      // ----------------------------------------------------------------------
+      // E. COMPONENTES
+      // ----------------------------------------------------------------------
+      
+      // --- Layout ---
+      const Layout = ({ children }) => {
         const { darkMode, toggleDarkMode } = useStudy();
         const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -340,7 +316,6 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
 
         return (
           <div className="min-h-screen flex flex-col transition-colors duration-200">
-            {/* Header */}
             <header className="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-gray-200 dark:border-slate-800 shadow-sm">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16 items-center">
@@ -353,7 +328,6 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
                     </span>
                   </div>
 
-                  {/* Desktop Nav */}
                   <nav className="hidden md:flex space-x-8">
                     {navItems.map((item) => (
                       <NavLink
@@ -377,11 +351,9 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
                     <button
                       onClick={toggleDarkMode}
                       className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
-                      aria-label="Toggle Dark Mode"
                     >
                       {darkMode ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-slate-600" />}
                     </button>
-                    
                     <button 
                       className="md:hidden p-2 text-gray-600 dark:text-gray-300"
                       onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -392,7 +364,6 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
                 </div>
               </div>
 
-              {/* Mobile Menu */}
               {mobileMenuOpen && (
                 <div className="md:hidden border-t border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900">
                   <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
@@ -419,8 +390,6 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
                 </div>
               )}
             </header>
-
-            {/* Main Content */}
             <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
               {children}
             </main>
@@ -428,13 +397,12 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
         );
       };
 
-      // 6. PAGES
-      // TopicList.tsx
-      const TopicList: React.FC = () => {
+      // --- TopicList ---
+      const TopicList = () => {
         const navigate = useNavigate();
         const { getTopicProgress } = useStudy();
         const [searchTerm, setSearchTerm] = useState('');
-        const [selectedCategory, setSelectedCategory] = useState<TopicCategory | 'All'>('All');
+        const [selectedCategory, setSelectedCategory] = useState('All');
 
         const filteredTopics = useMemo(() => {
           return TOPICS.filter(topic => {
@@ -447,14 +415,11 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
 
         const categories = Object.values(TopicCategory);
 
-        const getStatusIcon = (status: TopicStatus) => {
+        const getStatusIcon = (status) => {
           switch (status) {
-            case TopicStatus.Mastered:
-              return <CheckCircle2 className="w-5 h-5 text-green-500" />;
-            case TopicStatus.InReview:
-              return <Clock className="w-5 h-5 text-amber-500" />;
-            default:
-              return <Circle className="w-5 h-5 text-gray-300 dark:text-gray-600" />;
+            case TopicStatus.Mastered: return <CheckCircle2 className="w-5 h-5 text-green-500" />;
+            case TopicStatus.InReview: return <Clock className="w-5 h-5 text-amber-500" />;
+            default: return <Circle className="w-5 h-5 text-gray-300 dark:text-gray-600" />;
           }
         };
 
@@ -465,7 +430,6 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Temario Oficial</h1>
                 <p className="text-gray-500 dark:text-gray-400">31 Temas de Auxiliar Administrativo</p>
               </div>
-              
               <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -477,16 +441,13 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
                     className="pl-9 pr-4 py-2 w-full sm:w-64 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-sermas-500 focus:border-transparent outline-none"
                   />
                 </div>
-                
                 <select
                   value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value as TopicCategory | 'All')}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
                   className="px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-sermas-500 outline-none"
                 >
                   <option value="All">Todas las categorías</option>
-                  {categories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
+                  {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                 </select>
               </div>
             </div>
@@ -506,44 +467,39 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
                       </span>
                       {getStatusIcon(progress.status)}
                     </div>
-                    
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 group-hover:text-sermas-600 dark:group-hover:text-sermas-400 transition-colors">
                       {topic.title}
                     </h3>
-                    
                     <div className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700 flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
                       <span>{topic.category}</span>
-                      {progress.timesReviewed > 0 && (
-                        <span>Repasado: {progress.timesReviewed} veces</span>
-                      )}
+                      {progress.timesReviewed > 0 && <span>Repasado: {progress.timesReviewed} veces</span>}
                     </div>
                   </div>
                 );
               })}
             </div>
-
             {filteredTopics.length === 0 && (
               <div className="text-center py-12">
-                <p className="text-gray-500 dark:text-gray-400">No se encontraron temas con esos criterios.</p>
+                <p className="text-gray-500 dark:text-gray-400">No se encontraron temas.</p>
               </div>
             )}
           </div>
         );
       };
 
-      // TopicDetail.tsx
-      const TopicDetail: React.FC = () => {
-        const { id } = useParams<{ id: string }>();
+      // --- TopicDetail ---
+      const TopicDetail = () => {
+        const { id } = useParams();
         const navigate = useNavigate();
         const { textSize, setTextSize, updateTopicStatus, getTopicProgress } = useStudy();
         
-        const [topic, setTopic] = useState<Topic | null>(null);
-        const [activeSubtopic, setActiveSubtopic] = useState<string | null>(null);
+        const [topic, setTopic] = useState(null);
+        const [activeSubtopic, setActiveSubtopic] = useState(null);
         
         const [isSpeaking, setIsSpeaking] = useState(false);
         const [isPaused, setIsPaused] = useState(false);
         const [rate, setRate] = useState(1);
-        const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+        const utteranceRef = useRef(null);
 
         useEffect(() => {
           if (id) {
@@ -565,39 +521,27 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
           setIsPaused(false);
         }, []);
 
-        useEffect(() => {
-          return () => {
-            stopSpeech();
-          };
-        }, [stopSpeech]);
+        useEffect(() => { return () => stopSpeech(); }, [stopSpeech]);
 
         const toggleSpeech = () => {
           if (!topic || !activeSubtopic) return;
-
           if (isSpeaking && !isPaused) {
             window.speechSynthesis.pause();
             setIsPaused(true);
             return;
           }
-
           if (isSpeaking && isPaused) {
             window.speechSynthesis.resume();
             setIsPaused(false);
             return;
           }
-
           const subtopic = topic.subtopics.find(s => s.id === activeSubtopic);
           if (subtopic) {
             const textToRead = subtopic.content.replace(/[#*]/g, '');
-            
             const utterance = new SpeechSynthesisUtterance(textToRead);
             utterance.lang = 'es-ES';
             utterance.rate = rate;
-            utterance.onend = () => {
-              setIsSpeaking(false);
-              setIsPaused(false);
-            };
-            
+            utterance.onend = () => { setIsSpeaking(false); setIsPaused(false); };
             utteranceRef.current = utterance;
             window.speechSynthesis.speak(utterance);
             setIsSpeaking(true);
@@ -611,7 +555,6 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
           doc.text(topic.title, 10, 10);
           doc.setFontSize(12);
           let y = 20;
-          
           topic.subtopics.forEach(sub => {
              if (y > 270) { doc.addPage(); y = 20; }
              doc.setFont("helvetica", "bold");
@@ -622,7 +565,6 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
              doc.text(lines, 10, y);
              y += (lines.length * 5) + 10;
           });
-
           doc.save(`Tema_${topic.id}_OPE_SERMAS.pdf`);
         };
 
@@ -634,23 +576,15 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
         return (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-8rem)]">
             <aside className="lg:col-span-1 bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700 overflow-y-auto custom-scrollbar">
-              <button 
-                onClick={() => navigate('/')} 
-                className="flex items-center text-sm text-gray-500 hover:text-sermas-600 mb-6"
-              >
+              <button onClick={() => navigate('/')} className="flex items-center text-sm text-gray-500 hover:text-sermas-600 mb-6">
                 <ArrowLeft className="w-4 h-4 mr-1" /> Volver al temario
               </button>
-
               <h2 className="font-bold text-gray-900 dark:text-white mb-4">{topic.title}</h2>
-              
               <div className="space-y-2">
                 {topic.subtopics.map(sub => (
                   <button
                     key={sub.id}
-                    onClick={() => {
-                      stopSpeech();
-                      setActiveSubtopic(sub.id);
-                    }}
+                    onClick={() => { stopSpeech(); setActiveSubtopic(sub.id); }}
                     className={`w-full text-left p-3 rounded-lg text-sm transition-colors ${
                       activeSubtopic === sub.id
                         ? 'bg-sermas-50 text-sermas-700 border border-sermas-200 dark:bg-sermas-900/30 dark:text-sermas-300 dark:border-sermas-800'
@@ -667,29 +601,16 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
             <section className="lg:col-span-3 flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden">
               <div className="p-4 border-b border-gray-100 dark:border-slate-700 flex flex-wrap gap-4 items-center justify-between bg-gray-50 dark:bg-slate-800/50">
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={toggleSpeech}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      isSpeaking && !isPaused
-                        ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300'
-                        : 'bg-sermas-100 text-sermas-700 dark:bg-sermas-900/30 dark:text-sermas-300'
-                    }`}
-                  >
+                  <button onClick={toggleSpeech} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${isSpeaking && !isPaused ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300' : 'bg-sermas-100 text-sermas-700 dark:bg-sermas-900/30 dark:text-sermas-300'}`}>
                     {isSpeaking && !isPaused ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                     {isSpeaking && !isPaused ? 'Pausar' : 'Escuchar'}
                   </button>
-                  
                   {isSpeaking && (
                      <button onClick={stopSpeech} className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700">
                        <Square className="w-4 h-4 text-gray-600 dark:text-gray-400 fill-current" />
                      </button>
                   )}
-
-                  <select 
-                    value={rate} 
-                    onChange={(e) => setRate(parseFloat(e.target.value))}
-                    className="bg-transparent border-none text-xs text-gray-600 dark:text-gray-400 focus:ring-0 cursor-pointer"
-                  >
+                  <select value={rate} onChange={(e) => setRate(parseFloat(e.target.value))} className="bg-transparent border-none text-xs text-gray-600 dark:text-gray-400 focus:ring-0 cursor-pointer">
                     <option value="0.75">0.75x</option>
                     <option value="1">1.0x</option>
                     <option value="1.25">1.25x</option>
@@ -700,24 +621,11 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
                 <div className="flex items-center gap-3">
                    <div className="flex items-center gap-1 border-r border-gray-300 dark:border-slate-600 pr-3 mr-1">
                      <Type className="w-3 h-3 text-gray-400" />
-                     <input 
-                       type="range" 
-                       min="80" 
-                       max="150" 
-                       value={textSize} 
-                       onChange={(e) => setTextSize(parseInt(e.target.value))}
-                       className="w-20 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                     />
+                     <input type="range" min="80" max="150" value={textSize} onChange={(e) => setTextSize(parseInt(e.target.value))} className="w-20 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
                    </div>
-
-                   <button 
-                     onClick={handleExportPDF}
-                     title="Exportar PDF"
-                     className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500"
-                   >
+                   <button onClick={handleExportPDF} title="Exportar PDF" className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-500">
                      <MonitorDown className="w-5 h-5" />
                    </button>
-
                    <button
                     onClick={() => {
                       const newStatus = currentProgress.status === TopicStatus.Mastered ? TopicStatus.Pending : TopicStatus.Mastered;
@@ -729,24 +637,15 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
                         : 'bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-gray-300 hover:bg-gray-200'
                     }`}
                   >
-                    {currentProgress.status === TopicStatus.Mastered ? (
-                      <><CheckCircle className="w-4 h-4" /> Estudiado</>
-                    ) : (
-                      <><RotateCcw className="w-4 h-4" /> Marcar leído</>
-                    )}
+                    {currentProgress.status === TopicStatus.Mastered ? (<><CheckCircle className="w-4 h-4" /> Estudiado</>) : (<><RotateCcw className="w-4 h-4" /> Marcar leído</>)}
                   </button>
                 </div>
               </div>
 
               <div className="flex-1 overflow-y-auto p-8 custom-scrollbar relative">
                 {currentSubtopic ? (
-                  <div 
-                    className="prose dark:prose-invert prose-slate max-w-none transition-all duration-200"
-                    style={{ fontSize: `${textSize}%` }}
-                  >
-                    <h2 className="text-2xl font-bold mb-6 text-sermas-800 dark:text-sermas-200">
-                      {currentSubtopic.id} {currentSubtopic.title}
-                    </h2>
+                  <div className="prose dark:prose-invert prose-slate max-w-none transition-all duration-200" style={{ fontSize: `${textSize}%` }}>
+                    <h2 className="text-2xl font-bold mb-6 text-sermas-800 dark:text-sermas-200">{currentSubtopic.id} {currentSubtopic.title}</h2>
                     <ReactMarkdown 
                       components={{
                         h3: ({node, ...props}) => <h3 className="text-xl font-semibold mt-6 mb-3 text-gray-800 dark:text-gray-100" {...props} />,
@@ -760,9 +659,7 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
                     </ReactMarkdown>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center h-full text-gray-400">
-                    Selecciona un subtema para comenzar
-                  </div>
+                  <div className="flex items-center justify-center h-full text-gray-400">Selecciona un subtema para comenzar</div>
                 )}
               </div>
             </section>
@@ -770,34 +667,26 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
         );
       };
 
-      // Dashboard.tsx
-      const Dashboard: React.FC = () => {
+      // --- Dashboard ---
+      const Dashboard = () => {
         const { progress } = useStudy();
-
         const totalTopics = TOPICS.length;
         const mastered = Object.values(progress).filter((p) => p.status === TopicStatus.Mastered).length;
         const inReview = Object.values(progress).filter((p) => p.status === TopicStatus.InReview).length;
         const pending = totalTopics - mastered - inReview;
-
         const pieData = [
           { name: 'Estudiado', value: mastered, color: '#22c55e' },
           { name: 'En Repaso', value: inReview, color: '#f59e0b' },
           { name: 'Pendiente', value: pending, color: '#e2e8f0' },
         ];
-
         const categoryStats = TOPICS.reduce((acc, topic) => {
           if (!acc[topic.category]) acc[topic.category] = { total: 0, completed: 0 };
           acc[topic.category].total += 1;
-          if (progress[topic.id]?.status === TopicStatus.Mastered) {
-            acc[topic.category].completed += 1;
-          }
+          if (progress[topic.id]?.status === TopicStatus.Mastered) acc[topic.category].completed += 1;
           return acc;
         }, {});
-
         const barData = Object.entries(categoryStats).map(([name, stats]) => ({
-          name: name.split(' ')[0], 
-          completed: stats.completed,
-          total: stats.total
+          name: name.split(' ')[0], completed: stats.completed, total: stats.total
         }));
 
         return (
@@ -806,23 +695,14 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Panel de Progreso</h1>
               <p className="text-gray-500 dark:text-gray-400">Estadísticas de tu preparación OPE</p>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm flex flex-col items-center">
                  <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Progreso Global</h3>
                  <div className="w-full h-48">
                    <ResponsiveContainer width="100%" height="100%">
                      <PieChart>
-                       <Pie
-                         data={pieData}
-                         innerRadius={60}
-                         outerRadius={80}
-                         paddingAngle={5}
-                         dataKey="value"
-                       >
-                         {pieData.map((entry, index) => (
-                           <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
-                         ))}
+                       <Pie data={pieData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                         {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />)}
                        </Pie>
                      </PieChart>
                    </ResponsiveContainer>
@@ -832,7 +712,6 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
                    <p className="text-sm text-gray-500">Completado</p>
                  </div>
               </div>
-
               <div className="md:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm">
                 <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">Por Categoría</h3>
                 <div className="w-full h-64">
@@ -840,10 +719,7 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
                      <BarChart data={barData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                        <XAxis type="number" hide />
                        <YAxis dataKey="name" type="category" width={100} tick={{fill: '#94a3b8', fontSize: 12}} />
-                       <Tooltip 
-                          contentStyle={{ backgroundColor: '#1e293b', border: 'none', color: '#fff', borderRadius: '8px' }}
-                          itemStyle={{ color: '#fff' }}
-                       />
+                       <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', color: '#fff', borderRadius: '8px' }} itemStyle={{ color: '#fff' }} />
                        <Bar dataKey="total" fill="#f1f5f9" radius={[0, 4, 4, 0]} barSize={20} stackId="a" />
                        <Bar dataKey="completed" fill="#0ea5e9" radius={[0, 4, 4, 0]} barSize={20} stackId="a" />
                      </BarChart>
@@ -851,42 +727,20 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
                 </div>
               </div>
             </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { label: 'Temas Totales', val: totalTopics, color: 'text-gray-600 dark:text-gray-300' },
-                { label: 'Estudiados', val: mastered, color: 'text-green-600' },
-                { label: 'En Revisión', val: inReview, color: 'text-amber-500' },
-                { label: 'Pendientes', val: pending, color: 'text-gray-400' },
-              ].map((stat) => (
-                <div key={stat.label} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm text-center">
-                  <p className={`text-2xl font-bold mb-1 ${stat.color}`}>{stat.val}</p>
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">{stat.label}</p>
-                </div>
-              ))}
-            </div>
           </div>
         );
       };
 
-      // FlashcardsMode.tsx
-      interface Flashcard {
-        id: string;
-        question: string;
-        answer: string;
-        topicId: number;
-      }
-
-      const FlashcardsMode: React.FC = () => {
-        const [cards, setCards] = useState<Flashcard[]>([]);
+      // --- FlashcardsMode ---
+      const FlashcardsMode = () => {
+        const [cards, setCards] = useState([]);
         const [currentIndex, setCurrentIndex] = useState(0);
         const [isFlipped, setIsFlipped] = useState(false);
         const [sessionOver, setSessionOver] = useState(false);
         const { updateTopicStatus } = useStudy();
 
         useEffect(() => {
-          const generatedCards: Flashcard[] = [];
-          
+          const generatedCards = [];
           const topic1 = getTopicContent(1);
           topic1.subtopics.forEach(sub => {
             generatedCards.push({
@@ -896,7 +750,6 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
               topicId: 1
             });
           });
-
           TOPICS.slice(1, 6).forEach(t => {
              generatedCards.push({
                id: `t${t.id}`,
@@ -905,22 +758,15 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
                topicId: t.id
              });
           });
-
           setCards(generatedCards.sort(() => Math.random() - 0.5));
         }, []);
 
-        const handleNext = (remembered: boolean) => {
-          if (remembered) {
-            updateTopicStatus(cards[currentIndex].topicId, TopicStatus.InReview);
-          }
-
+        const handleNext = (remembered) => {
+          if (remembered) updateTopicStatus(cards[currentIndex].topicId, TopicStatus.InReview);
           setIsFlipped(false);
           setTimeout(() => {
-            if (currentIndex < cards.length - 1) {
-              setCurrentIndex(prev => prev + 1);
-            } else {
-              setSessionOver(true);
-            }
+            if (currentIndex < cards.length - 1) setCurrentIndex(prev => prev + 1);
+            else setSessionOver(true);
           }, 200);
         };
 
@@ -940,11 +786,7 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
                 <Brain className="w-12 h-12 text-green-600 dark:text-green-400" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">¡Repaso completado!</h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-8">Has revisado {cards.length} tarjetas.</p>
-              <button 
-                onClick={restart}
-                className="flex items-center gap-2 px-6 py-3 bg-sermas-600 text-white rounded-xl hover:bg-sermas-700 transition-colors shadow-lg"
-              >
+              <button onClick={restart} className="flex items-center gap-2 px-6 py-3 bg-sermas-600 text-white rounded-xl hover:bg-sermas-700 transition-colors shadow-lg">
                 <RefreshCw className="w-5 h-5" /> Repasar otra vez
               </button>
             </div>
@@ -956,46 +798,27 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
         return (
           <div className="flex flex-col items-center justify-center min-h-[70vh] max-w-2xl mx-auto">
             <div className="w-full flex justify-between items-center mb-6 px-2">
-              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                Tarjeta {currentIndex + 1} de {cards.length}
-              </span>
-              <span className="text-xs bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded text-gray-600 dark:text-gray-300">
-                 Tema {currentCard.topicId}
-              </span>
+              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Tarjeta {currentIndex + 1} de {cards.length}</span>
+              <span className="text-xs bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded text-gray-600 dark:text-gray-300">Tema {currentCard.topicId}</span>
             </div>
-
-            <div 
-              className="relative w-full h-80 perspective-1000 cursor-pointer group"
-              onClick={() => setIsFlipped(!isFlipped)}
-            >
+            <div className="relative w-full h-80 perspective-1000 cursor-pointer group" onClick={() => setIsFlipped(!isFlipped)}>
               <div className={`relative w-full h-full duration-500 preserve-3d transition-transform ${isFlipped ? 'rotate-y-180' : ''}`}>
-                
-                {/* Front */}
                 <div className="absolute w-full h-full backface-hidden bg-white dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl flex flex-col items-center justify-center p-8 text-center">
                   <p className="text-sm text-sermas-600 font-bold uppercase tracking-wider mb-4">Pregunta</p>
                   <h3 className="text-xl font-medium text-gray-800 dark:text-white">{currentCard.question}</h3>
                   <p className="mt-8 text-xs text-gray-400">(Toca para ver respuesta)</p>
                 </div>
-
-                {/* Back */}
                 <div className="absolute w-full h-full backface-hidden rotate-y-180 bg-sermas-50 dark:bg-slate-900 border-2 border-sermas-200 dark:border-slate-700 rounded-2xl shadow-xl flex flex-col items-center justify-center p-8 text-center">
                   <p className="text-sm text-sermas-600 font-bold uppercase tracking-wider mb-4">Respuesta</p>
                   <p className="text-lg text-gray-700 dark:text-gray-200 leading-relaxed">{currentCard.answer}</p>
                 </div>
               </div>
             </div>
-
             <div className="flex gap-4 mt-8 w-full max-w-sm">
-              <button 
-                onClick={() => handleNext(false)}
-                className="flex-1 flex justify-center items-center gap-2 py-3 rounded-xl bg-red-100 hover:bg-red-200 text-red-700 font-medium transition-colors dark:bg-red-900/20 dark:text-red-300 dark:hover:bg-red-900/40"
-              >
+              <button onClick={() => handleNext(false)} className="flex-1 flex justify-center items-center gap-2 py-3 rounded-xl bg-red-100 hover:bg-red-200 text-red-700 font-medium transition-colors">
                 <X className="w-5 h-5" /> Difícil
               </button>
-              <button 
-                onClick={() => handleNext(true)}
-                className="flex-1 flex justify-center items-center gap-2 py-3 rounded-xl bg-green-100 hover:bg-green-200 text-green-700 font-medium transition-colors dark:bg-green-900/20 dark:text-green-300 dark:hover:bg-green-900/40"
-              >
+              <button onClick={() => handleNext(true)} className="flex-1 flex justify-center items-center gap-2 py-3 rounded-xl bg-green-100 hover:bg-green-200 text-green-700 font-medium transition-colors">
                 <Check className="w-5 h-5" /> Fácil
               </button>
             </div>
@@ -1003,8 +826,8 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
         );
       };
 
-      // App.tsx
-      const App: React.FC = () => {
+      // --- App ---
+      const App = () => {
         return (
           <StudyProvider>
             <HashRouter>
@@ -1022,7 +845,9 @@ Considere que la Constitución es la "partitura maestra" sobre la que se interpr
         );
       };
 
-      // 7. RENDER
+      // ----------------------------------------------------------------------
+      // F. RENDERIZADO
+      // ----------------------------------------------------------------------
       const rootElement = document.getElementById('root');
       if (rootElement) {
         const root = ReactDOM.createRoot(rootElement);
